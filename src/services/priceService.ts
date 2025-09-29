@@ -1,5 +1,6 @@
 import fs from "node:fs/promises";
 import path from "node:path";
+import { parseCSV } from "../utils/csv.ts";
 
 export type FreightIndex = {
   route: string;
@@ -12,7 +13,46 @@ export type FreightIndex = {
 const LATEST_PATH = path.resolve("data/latest.json");
 const HISTORY_PATH = path.resolve("data/history.csv");
 
-export async function getLatestIndex(route = "FREIGHT_SH-LA"): Promise<FreightIndex> { /* existing */ }
+/**
+ * Return the latest index row for a given route.
+ * Reads from data/latest.json; if missing or invalid, falls back to default.
+ */
+export async function getLatestIndex(route = "FREIGHT_SH-LA"): Promise<FreightIndex> {
+  try {
+    const raw = await fs.readFile(LATEST_PATH, "utf8");
+    const j = JSON.parse(raw) as Partial<FreightIndex>;
+    if (
+      typeof j.value === "number" &&
+      typeof j.asOf === "string" &&
+      j.currency === "USD" &&
+      j.unit === "per_40FT"
+    ) {
+      return {
+        route,
+        asOf: j.asOf,
+        currency: "USD",
+        unit: "per_40FT",
+        value: j.value,
+      };
+    }
+    throw new Error("Invalid schema in latest.json");
+  } catch {
+    // fallback so API doesn’t break
+    const today = new Date(Date.UTC(
+      new Date().getUTCFullYear(),
+      new Date().getUTCMonth(),
+      new Date().getUTCDate()
+    )).toISOString();
+
+    return {
+      route,
+      asOf: today,
+      currency: "USD",
+      unit: "per_40FT",
+      value: 2000,
+    };
+  }
+}
 
 export type HistoryQuery = {
   route?: string;
@@ -21,8 +61,10 @@ export type HistoryQuery = {
   limit?: number;  // default 30
 };
 
-import { parseCSV } from "../utils/csv.ts";
-
+/**
+ * Query the historical index values for a route.
+ * Applies optional from/to/limit filters. Newest first.
+ */
 export async function getHistory(q: HistoryQuery = {}) {
   const route = q.route ?? "FREIGHT_SH-LA";
   const limit = q.limit && q.limit > 0 ? Math.min(q.limit, 3650) : 30;
@@ -38,7 +80,9 @@ export async function getHistory(q: HistoryQuery = {}) {
       unit: r.unit as "per_40FT",
       value: Number(r.value),
     }));
-  } catch { rows = []; }
+  } catch {
+    rows = [];
+  }
 
   // filter
   rows = rows.filter(r => r.route === route);

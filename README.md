@@ -1,15 +1,78 @@
-Minimal API for the **FR8X Freight Index** (USD **per 40ft container / FEU**).  
-Exposes current index snapshot in JSON and CSV and includes a daily update scaffold.
+# fr8x-backend
 
-## Quick Start
+Backend service for the **fr8x Freight Index** MVP.  
+Exposes `/index` and `/history` endpoints with mock freight rate data.
+
+---
+
+## 🚀 Getting Started
+
+### 1. Install dependencies
 ```bash
-pnpm i
+pnpm install
+2. Run in dev mode
+bash
+Copy code
 pnpm dev
-# → Backend http://localhost:3001
+The API will listen at http://localhost:3001.
 
-Unit: All rates are quoted as **USD per 40ft container (FEU)**.
-Positions: Trading layer supports **decimal quantities** (e.g., 0.1, 0.5, 2.75 contracts)
-to scale exposure without TEU/FEU conversion assumptions.
-Endpoints:
-- GET /index        → latest snapshot (JSON)
-- GET /index.csv    → latest snapshot (CSV)
+3. Update the index (daily job)
+bash
+Copy code
+pnpm run update:index
+Options:
+
+pnpm run update:index → append a new value (random walk around $2000).
+
+pnpm run update:index:force → force re-write for today.
+
+pnpm run update:index:manual → set a manual value, e.g. value=2100.
+
+All data is stored in data/ (ignored by git).
+
+4. Smoke test
+bash
+Copy code
+pnpm run smoke
+This will:
+
+Check /health
+
+Fetch /index (JSON)
+
+Fetch /index.csv
+
+Fetch last 5 rows from /history
+
+📡 API
+GET /health → service status
+
+GET /index → latest index (JSON or CSV)
+
+GET /history → historical values (filters: route, from, to, limit, format)
+
+For full details, see openapi.yaml.
+
+🛠 Tech
+Express
+
+TypeScript
+
+pnpm
+
+tsx for fast dev
+
+📂 Project Structure
+bash
+Copy code
+src/
+  app.ts              # express app
+  index.ts            # entrypoint
+  routes/             # API routes
+  services/           # business logic
+  utils/              # helpers (CSV)
+
+scripts/
+  update-index.ts     # daily updater
+
+data/                 # generated index + history (gitignored)

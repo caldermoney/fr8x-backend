@@ -7,16 +7,22 @@
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "update:index": "tsx scripts/update-index.ts"
+    "update:index": "tsx scripts/update-index.ts",
+    "update:index:force": "tsx scripts/update-index.ts force=true"
   },
   "dependencies": {
     "cors": "^2.8.5",
-    "express": "^5.1.0"
+    "express": "^5.1.0",
+    "compression": "^1.7.4"
   },
   "devDependencies": {
     "@types/cors": "^2.8.19",
     "@types/express": "^5.0.3",
     "nodemon": "^3.1.10",
-    "tsx": "^4.20.6"
-  }
+    "tsx": "^4.20.6",
+    "@types/node": "^22.0.0",
+    "typescript": "^5.6.3"
+  },
+    "smoke": "curl -s http://localhost:3001/ && echo && curl -s http://localhost:3001/index && echo && curl -s http://localhost:3001/index.csv",
+    "test:update": "pnpm run update:index && pnpm run smoke"
 }
